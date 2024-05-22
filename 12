@@ -150,3 +150,30 @@ int main() {
 
     return 0;
 }
+            child.gender = (gender == 'M') ? Gender::Male : Gender::Female;
+            cout << "Enter days attended: ";
+            cin >> child.daysAttended;
+            cout << "Enter file name: ";
+            cin >> filename;
+            addDataToFile(child, filename);
+            break;
+        case 4:
+            sortByName(children);
+            break;
+        case 5:
+            cout << "The most sick child is: " << findMostSickChild(children).surname << endl;
+            break;
+        case 6:
+            cout << "Enter address: ";
+            cin >> address;
+            listChildrenByAddress(children, address);
+            break;
+        case 7:
+            cout << "Boys total days attended: " << countGenderAttendance(children, Gender::Male) << endl;
+            cout << "Girls total days attended: " << countGenderAttendance(children, Gender::Female) << endl;
+            break;
+        }
+    } while (choice != 0);
+
+    return 0;
+}
