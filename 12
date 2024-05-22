@@ -1,0 +1,152 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <algorithm>
+#include <string>
+
+using namespace std;
+
+enum class Gender { Male, Female };
+
+struct Child {
+    string surname;
+    string address;
+    Gender gender;
+    int daysAttended;
+};
+
+using ChildrenDatabase = vector<Child>;
+
+void loadDataFromFile(ChildrenDatabase& children, const string& filename) {
+    ifstream file(filename, ios::binary);
+    if (file.is_open()) {
+        Child child;
+        while (file.read(reinterpret_cast<char*>(&child), sizeof(Child))) {
+            children.push_back(child);
+        }
+        file.close();
+    } else {
+        cout << "Error opening file: " << filename << endl;
+    }
+}
+
+void saveDataToFile(const ChildrenDatabase& children, const string& filename) {
+    ofstream file(filename, ios::binary | ios::trunc);
+    if (file.is_open()) {
+        for (const auto& child : children) {
+            file.write(reinterpret_cast<const char*>(&child), sizeof(Child));
+        }
+        file.close();
+    } else {
+        cout << "Error opening file: " << filename << endl;
+    }
+}
+
+void addDataToFile(const Child& child, const string& filename) {
+    ofstream file(filename, ios::binary | ios::app);
+    if (file.is_open()) {
+        file.write(reinterpret_cast<const char*>(&child), sizeof(Child));
+        file.close();
+    } else {
+        cout << "Error opening file: " << filename << endl;
+    }
+}
+
+void sortByName(ChildrenDatabase& children) {
+    sort(children.begin(), children.end(), [](const Child& a, const Child& b) {
+        return a.surname < b.surname;
+    });
+}
+
+Child findMostSickChild(const ChildrenDatabase& children) {
+    return *max_element(children.begin(), children.end(), [](const Child& a, const Child& b) {
+        return a.daysAttended < b.daysAttended;
+    });
+}
+
+void listChildrenByAddress(const ChildrenDatabase& children, const string& address) {
+    cout << "Children living at " << address << ":" << endl;
+    for (const auto& child : children) {
+        if (child.address == address) {
+            cout << "- " << child.surname << endl;
+        }
+    }
+}
+
+int countGenderAttendance(const ChildrenDatabase& children, Gender gender) {
+    int totalDays = 0;
+    for (const auto& child : children) {
+        if (child.gender == gender) {
+            totalDays += child.daysAttended;
+        }
+    }
+    return totalDays;
+}
+
+int main() {
+    ChildrenDatabase children;
+
+    int choice;
+    string filename, address;
+    Child child;
+
+    do {
+        cout << "Choose an action:" << endl;
+        cout << "1. Load data from file" << endl;
+        cout << "2. Save data to file" << endl;
+        cout << "3. Add new data to file" << endl;
+        cout << "4. Sort database by name" << endl;
+        cout << "5. Find the most sick child" << endl;
+        cout << "6. List children by address" << endl;
+        cout << "7. Determine who gets sick more: boys or girls" << endl;
+        cout << "0. Exit" << endl;
+        cout << "Your choice: ";
+        cin >> choice;
+
+        switch (choice) {
+        case 1:
+            cout << "Enter file name: ";
+            cin >> filename;
+            loadDataFromFile(children, filename);
+            break;
+        case 2:
+            cout << "Enter file name: ";
+            cin >> filename;
+            saveDataToFile(children, filename);
+            break;
+        case 3:
+            cout << "Enter surname: ";
+            cin >> child.surname;
+            cout << "Enter address: ";
+            cin >> child.address;
+            cout << "Enter gender (M/F): ";
+            char gender;
+            cin >> gender;
+            
+            child.gender = (gender == 'M') ? Gender::Male : Gender::Female;
+            cout << "Enter days attended: ";
+            cin >> child.daysAttended;
+            cout << "Enter file name: ";
+            cin >> filename;
+            addDataToFile(child, filename);
+            break;
+        case 4:
+            sortByName(children);
+            break;
+        case 5:
+            cout << "The most sick child is: " << findMostSickChild(children).surname << endl;
+            break;
+        case 6:
+            cout << "Enter address: ";
+            cin >> address;
+            listChildrenByAddress(children, address);
+            break;
+        case 7:
+            cout << "Boys total days attended: " << countGenderAttendance(children, Gender::Male) << endl;
+            cout << "Girls total days attended: " << countGenderAttendance(children, Gender::Female) << endl;
+            break;
+        }
+    } while (choice != 0);
+
+    return 0;
+}
