@@ -1,140 +1,171 @@
 #include <iostream>
-#include <fstream>
+#include <string>
 #include <vector>
+#include <fstream>
 #include <algorithm>
 
 using namespace std;
 
+// Структура для хранения информации о ребенке
 struct Child {
     string surname;
     string address;
-    char gender;
-    int absent;
+    string gender;
+    int daysVisited;
 };
 
-using ChildrenDB = vector<Child>;
-
-void loadFromFile(ChildrenDB& kids, string file) {
-    ifstream f(file, ios::binary);
-    if (f.is_open()) {
-        Child k;
-        while (f.read(reinterpret_cast<char*>(&k), sizeof(k))) {
-            kids.push_back(k);
+// Функция для загрузки данных из файла
+void loadDataFromFile(vector<Child>& children, string fileName) {
+    ifstream file(fileName);
+    if (file.is_open()) {
+        while (!file.eof()) {
+            Child child;
+            getline(file, child.surname, ':');
+            getline(file, child.address, ':');
+            getline(file, child.gender, ':');
+            file >> child.daysVisited;
+            file.ignore(); // Пропустить символ переноса строки
+            children.push_back(child);
         }
-        f.close();
+        file.close();
     } else {
-        cout << "Error: " << file << endl;
+        cout << "Не удается открыть файл " << fileName << endl;
     }
 }
 
-void saveToFile(const ChildrenDB& kids, string file) {
-    ofstream f(file, ios::binary | ios::trunc);
-    if (f.is_open()) {
-        for (auto& k : kids) {
-            f.write(reinterpret_cast<const char*>(&k), sizeof(k));
-        }
-        f.close();
+// Функция для добавления новых данных в файл
+void addDataToFile(vector<Child>& children, string fileName) {
+    ofstream file(fileName, ios::app); // Открываем файл для дозаписи
+    if (file.is_open()) {
+        Child newChild;
+        cout << "Введите фамилию: ";
+        cin >> newChild.surname;
+        cout << "Введите адрес: ";
+        cin >> newChild.address;
+        cout << "Введите пол (муж/жен): ";
+        cin >> newChild.gender;
+        cout << "Введите количество дней посещения: ";
+        cin >> newChild.daysVisited;
+        file << newChild.surname << ":" << newChild.address << ":" << newChild.gender << ":" << newChild.daysVisited << endl;
+        children.push_back(newChild);
+        file.close();
     } else {
-        cout << "Error: " << file << endl;
+        cout << "Не удается открыть файл " << fileName << endl;
     }
 }
 
-void addToFile(const Child& k, string file) {
-    ofstream f(file, ios::binary | ios::app);
-    if (f.is_open()) {
-        f.write(reinterpret_cast<const char*>(&k), sizeof(k));
-        f.close();
-    } else {
-        cout << "Error: " << file << endl;
-    }
-}
-
-void sortByName(ChildrenDB& kids) {
-    sort(kids.begin(), kids.end(), [](const Child& a, const Child& b) {
+// Функция для сортировки базы данных по алфавиту (по фамилии)
+void sortByAlphabet(vector<Child>& children) {
+    sort(children.begin(), children.end(), [](const Child& a, const Child& b) {
         return a.surname < b.surname;
     });
 }
 
-Child findSickest(const ChildrenDB& kids) {
-    Child worst = kids[0];
-    for (size_t i = 1; i < kids.size(); ++i) {
-        if (kids[i].absent > worst.absent) {
-            worst = kids[i];
+// Функция для определения самого болеющего ребенка
+void findMostSickChild(const vector<Child>& children) {
+    int maxDays = 0;
+    string maxChildSurname;
+    for (const auto& child : children) {
+        if (child.daysVisited > maxDays) {
+            maxDays = child.daysVisited;
+            maxChildSurname = child.surname;
         }
     }
-    return worst;
+    cout << "Самый болеющий ребенок: " << maxChildSurname << " (" << maxDays << " дней)" << endl;
 }
 
-void listByAddress(const ChildrenDB& kids, string addr) {
-    cout << "Kids at " << addr << ":" << endl;
-    for (auto& k : kids) {
-        if (k.address == addr) {
-            cout << "- " << k.surname << endl;
+// Функция для вывода списка детей, проживающих на заданной улице
+void printChildrenByAddress(const vector<Child>& children, string address) {
+    bool found = false;
+    for (const auto& child : children) {
+        if (child.address == address) {
+            cout << child.surname << endl;
+            found = true;
         }
+    }
+    if (!found) {
+        cout << "Нет детей, проживающих на улице " << address << endl;
     }
 }
 
-int countGender(const ChildrenDB& kids, char g) {
-    int total = 0;
-    for (auto& k : kids) {
-        if (k.gender == g) {
-            total += k.absent;
+// Функция для определения, кто больше болеет - мальчики или девочки
+void compareGenderSickness(const vector<Child>& children) {
+    int boysTotal = 0, girlsTotal = 0;
+    for (const auto& child : children) {
+        if (child.gender == "муж") {
+            boysTotal += child.daysVisited;
+        } else {
+            girlsTotal += child.daysVisited;
         }
     }
-    return total;
+    if (boysTotal > girlsTotal) {
+        cout << "Мальчики болеют больше, чем девочки" << endl;
+    } else if (girlsTotal > boysTotal) {
+        cout << "Девочки болеют больше, чем мальчики" << endl;
+    } else {
+        cout << "Мальчики и девочки болеют одинаково" << endl;
+    }
 }
 
 int main() {
-    ChildrenDB kids;
-    int choice;
-    string file, addr;
-    Child k;
+    vector<Child> children;
+    string fileName;
 
     do {
-        cout << "1. Load\n2. Save\n3. Add\n4. Sort\n5. Sickest\n6. List\n7. Gender\n0. Exit" << endl;
-        cout << "Choice: ";
+        cout << "Выберете номер действия:" << endl;
+
+        cout << "1. Загрузить все данные из файла на экран" << endl;
+        cout << "2. Ввести новые данные в файл" << endl;
+        cout << "3. Добавить данные в конец файла" << endl;
+        cout << "4. Сортировка базы данных по алфавиту (по фамилии)" << endl;
+        cout << "5. Определить самого болеющего ребенка" << endl;
+        cout << "6. Вывести список детей, проживающих на данной улице" << endl;
+        cout << "7. Определить, кто больше болеет - мальчики или девочки" << endl;
+        cout << "0. Выход из программы" << endl;
+        cout << "Ваш выбор: ";
+
+        int choice;
         cin >> choice;
 
         switch (choice) {
-        case 1:
-            cout << "File: ";
-            cin >> file;
-            loadFromFile(kids, file);
-            break;
-        case 2:
-            cout << "File: ";
-            cin >> file;
-            saveToFile(kids, file);
-            break;
-        case 3:
-            cout << "Surname: ";
-            cin >> k.surname;
-            cout << "Address: ";
-            cin >> k.address;
-            cout << "Gender (M/F): ";
-            cin >> k.gender;
-            cout << "Absent: ";
-            cin >> k.absent;
-            cout << "File: ";
-            cin >> file;
-            addToFile(k, file);
-            break;
-        case 4:
-            sortByName(kids);
-            break;
-        case 5:
-            cout << "Sickest: " << findSickest(kids).surname << endl;
-            break;
-        case 6:
-            cout << "Address: ";
-            cin >> addr;
-
-            listByAddress(kids, addr);
-            break;
-        case 7:
-            cout << "Boys: " << countGender(kids, 'M') << endl;
-            cout << "Girls: " << countGender(kids, 'F') << endl;
-            break;
+            case 1:
+                cout << "Введите имя и путь к файлу: ";
+                cin >> fileName;
+                loadDataFromFile(children, fileName);
+                for (const auto& child : children) {
+                    cout << "Фамилия: " << child.surname << ", Адрес: " << child.address << ", Пол: " << child.gender << ", Дней посещений: " << child.daysVisited << endl;
+                }
+                break;
+            case 2:
+                cout << "Введите имя и путь к файлу: ";
+                cin >> fileName;
+                addDataToFile(children, fileName);
+                break;
+            case 3:
+                cout << "Введите имя и путь к файлу: ";
+                cin >> fileName;
+                addDataToFile(children, fileName);
+                break;
+            case 4:
+                sortByAlphabet(children);
+                break;
+            case 5:
+                findMostSickChild(children);
+                break;
+            case 6:
+                cout << "Введите адрес: ";
+                string address;
+                cin >> address;
+                printChildrenByAddress(children, address);
+                break;
+            case 7:
+                compareGenderSickness(children);
+                break;
+            case 0:
+                cout << "Выход из программы" << endl;
+                break;
+            default:
+                cout << "Неверный выбор. Попробуйте еще раз." << endl;
         }
     } while (choice != 0);
 
