@@ -59,9 +59,13 @@ void sortByName(ChildrenDatabase& children) {
 }
 
 Child findMostSickChild(const ChildrenDatabase& children) {
-    return *max_element(children.begin(), children.end(), [](const Child& a, const Child& b) {
-        return a.daysAttended < b.daysAttended;
-    });
+    Child mostSickChild = children[0];
+    for (size_t i = 1; i < children.size(); ++i) {
+        if (children[i].daysAttended > mostSickChild.daysAttended) {
+            mostSickChild = children[i];
+        }
+    }
+    return mostSickChild;
 }
 
 void listChildrenByAddress(const ChildrenDatabase& children, const string& address) {
@@ -118,38 +122,11 @@ int main() {
             cout << "Enter surname: ";
             cin >> child.surname;
             cout << "Enter address: ";
+
             cin >> child.address;
             cout << "Enter gender (M/F): ";
             char gender;
             cin >> gender;
-            
-            child.gender = (gender == 'M') ? Gender::Male : Gender::Female;
-            cout << "Enter days attended: ";
-            cin >> child.daysAttended;
-            cout << "Enter file name: ";
-            cin >> filename;
-            addDataToFile(child, filename);
-            break;
-        case 4:
-            sortByName(children);
-            break;
-        case 5:
-            cout << "The most sick child is: " << findMostSickChild(children).surname << endl;
-            break;
-        case 6:
-            cout << "Enter address: ";
-            cin >> address;
-            listChildrenByAddress(children, address);
-            break;
-        case 7:
-            cout << "Boys total days attended: " << countGenderAttendance(children, Gender::Male) << endl;
-            cout << "Girls total days attended: " << countGenderAttendance(children, Gender::Female) << endl;
-            break;
-        }
-    } while (choice != 0);
-
-    return 0;
-}
             child.gender = (gender == 'M') ? Gender::Male : Gender::Female;
             cout << "Enter days attended: ";
             cin >> child.daysAttended;
